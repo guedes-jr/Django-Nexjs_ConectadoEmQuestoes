@@ -135,14 +135,15 @@ Contato / observações
 
 ```mermaid
 flowchart LR
-  A[Usuário<br/>(browser)] -->|acessa| B[Next.js<br/>(frontend: localhost:3000)]
-  B -->|redirect para OAuth| C[Backend Django<br/>(allauth / dj-rest-auth)<br/>(localhost:8000)]
+  A[Usuário (browser)] -->|acessa| B[Next.js (frontend: localhost:3000)]
+  B -->|redirect para OAuth| C[Backend Django (allauth / dj-rest-auth) - localhost:8000]
   C -->|inicia fluxo OAuth| D[Google OAuth]
   D -->|redirect com code| C
   C -->|cria/valida sessão / cookies (JWT)| A
   C -->|lê/escreve| E[DB SQLite / Users]
-  C -->|admin config| F[Django Admin<br/>(SocialApp, Sites)]
+  C -->|admin config| F[Django Admin (SocialApp, Sites)]
   B -->|chama API (withCredentials)| C
+
   style A fill:#f9f,stroke:#333,stroke-width:1px
   style B fill:#bbf,stroke:#333,stroke-width:1px
   style C fill:#bfb,stroke:#333,stroke-width:1px
