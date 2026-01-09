@@ -135,73 +135,59 @@ Contato / observações
 
 ```mermaid
 flowchart LR
-  U[User / Browser] -->|opens| N[Next.js Frontend :3000]
+  U[User Browser] --> N[Nextjs Frontend port 3000]
 
-  subgraph NEXT[Next.js (App Router)]
-    L[/login page/]
-    D[/dashboard page/]
-    MW[middleware.ts\nGuards /dashboard\nChecks cookie: sessionid]
-    AX[Axios client\nwithCredentials=true]
+  subgraph NEXT[Nextjs App Router]
+    L[Login Page]
+    D[Dashboard Page]
+    MW[Middleware Guard Dashboard]
+    AX[Axios Client withCredentials true]
   end
 
-  subgraph DJ[Backend Django :8000]
-    AU[allauth URLs\n/accounts/*]
-    DJA[Django Admin\n/admin]
-    API[DRF + dj-rest-auth\n/api/auth/user/]
-    SESS[Django Session Middleware\nsessionid cookie]
-    SITE[Sites framework\nSITE_ID]
-    SA[SocialApp\nGoogle client id/secret]
+  subgraph DJ[Django Backend port 8000]
+    AU[Allauth Accounts URLs]
+    API[DRF dj-rest-auth User Endpoint]
+    SESS[Django Session sessionid Cookie]
+    ADM[Django Admin]
+    SITE[Sites Framework SITE_ID]
+    SA[SocialApp Google Client]
   end
 
-  subgraph GOOG[Google OAuth 2.0]
-    G[Google Consent + Auth]
+  subgraph GOOG[Google OAuth]
+    G[Google Consent and Auth]
   end
 
-  DB[(DB: SQLite\nUsers + SocialAccount + Sessions)]
+  DB[(Database Users SocialAccount Sessions)]
 
-  %% ---- Login flow ----
-  N -->|user clicks "Continue with Google"| AU
-  AU -->|redirect to Google OAuth| G
-  G -->|callback with auth code| AU
-  AU -->|create or link user| DB
-  AU -->|create session| SESS
-  SESS -->|Set-Cookie: sessionid| U
-  AU -->|redirect after login| D
+  N --> L
+  L -->|Click Continue with Google| AU
+  AU -->|Redirect to Google| G
+  G -->|Callback with code| AU
+  AU -->|Create or link user| DB
+  AU -->|Create session| SESS
+  SESS -->|Set sessionid cookie| U
+  AU -->|Redirect after login| D
 
-  %% ---- Route protection ----
-  U -->|request /dashboard| MW
-  MW -->|if no sessionid| L
-  MW -->|if has sessionid| D
+  U -->|Request Dashboard| MW
+  MW -->|No sessionid cookie| L
+  MW -->|Has sessionid cookie| D
 
-  %% ---- User data fetch ----
-  D -->|load user| AX
-  AX -->|GET /api/auth/user/ (include cookies)| API
-  API -->|SessionAuthentication reads sessionid| SESS
-  API -->|fetch user| DB
-  API -->|return user JSON| D
+  D --> AX
+  AX -->|GET api auth user include cookies| API
+  API -->|SessionAuthentication uses sessionid| SESS
+  API -->|Fetch user| DB
+  API -->|Return user JSON| D
 
-  %% ---- Logout flow ----
-  D -->|Logout button| AU
-  AU -->|/accounts/logout/| SESS
-  SESS -->|clear session| DB
-  AU -->|redirect after logout| L
+  D -->|Logout| AU
+  AU -->|Logout clears session| SESS
+  SESS -->|Remove session from DB| DB
+  AU -->|Redirect after logout| L
 
-  %% ---- Admin config dependencies ----
-  DJA -->|configure| SITE
-  DJA -->|configure| SA
-  SA -->|enables provider| AU
-  SITE -->|binds SocialApp to domain| AU
+  ADM -->|Configure| SITE
+  ADM -->|Configure| SA
+  SA -->|Enable Google provider| AU
+  SITE -->|Bind SocialApp to domain| AU
 
-  %% ---- Notes / styling ----
-  classDef client fill:#e8f0fe,stroke:#1a73e8,stroke-width:1px
-  classDef server fill:#e6f4ea,stroke:#188038,stroke-width:1px
-  classDef external fill:#fff7e6,stroke:#b06000,stroke-width:1px
-  classDef storage fill:#f3f4f6,stroke:#6b7280,stroke-width:1px
-
-  class U,N,L,D,MW,AX client
-  class AU,DJA,API,SESS,SITE,SA server
-  class G external
-  class DB storage
 ```
 
 Observações rápidas:
