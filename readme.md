@@ -135,21 +135,73 @@ Contato / observações
 
 ```mermaid
 flowchart LR
-  A[User] -->|accesses| B[Next.js\nfrontend:3000]
-  B -->|redirect to OAuth| C[Backend Django\nallauth / dj-rest-auth\nlocalhost:8000]
-  C -->|init OAuth flow| D[Google OAuth]
-  D -->|redirect with code| C
-  C -->|create/validate session and cookies| A
-  C -->|read/write| E[DB SQLite / Users]
-  C -->|admin config| F[Django Admin\nSocialApp, Sites]
-  B -->|API calls (withCredentials)| C
+  U[User / Browser] -->|opens| N[Next.js Frontend :3000]
 
-  style A fill:#f9f,stroke:#333,stroke-width:1px
-  style B fill:#bbf,stroke:#333,stroke-width:1px
-  style C fill:#bfb,stroke:#333,stroke-width:1px
-  style D fill:#ffd,stroke:#333,stroke-width:1px
-  style E fill:#eee,stroke:#333,stroke-width:1px
-  style F fill:#fcc,stroke:#333,stroke-width:1px
+  subgraph NEXT[Next.js (App Router)]
+    L[/login page/]
+    D[/dashboard page/]
+    MW[middleware.ts\nGuards /dashboard\nChecks cookie: sessionid]
+    AX[Axios client\nwithCredentials=true]
+  end
+
+  subgraph DJ[Backend Django :8000]
+    AU[allauth URLs\n/accounts/*]
+    DJA[Django Admin\n/admin]
+    API[DRF + dj-rest-auth\n/api/auth/user/]
+    SESS[Django Session Middleware\nsessionid cookie]
+    SITE[Sites framework\nSITE_ID]
+    SA[SocialApp\nGoogle client id/secret]
+  end
+
+  subgraph GOOG[Google OAuth 2.0]
+    G[Google Consent + Auth]
+  end
+
+  DB[(DB: SQLite\nUsers + SocialAccount + Sessions)]
+
+  %% ---- Login flow ----
+  N -->|user clicks "Continue with Google"| AU
+  AU -->|redirect to Google OAuth| G
+  G -->|callback with auth code| AU
+  AU -->|create or link user| DB
+  AU -->|create session| SESS
+  SESS -->|Set-Cookie: sessionid| U
+  AU -->|redirect after login| D
+
+  %% ---- Route protection ----
+  U -->|request /dashboard| MW
+  MW -->|if no sessionid| L
+  MW -->|if has sessionid| D
+
+  %% ---- User data fetch ----
+  D -->|load user| AX
+  AX -->|GET /api/auth/user/ (include cookies)| API
+  API -->|SessionAuthentication reads sessionid| SESS
+  API -->|fetch user| DB
+  API -->|return user JSON| D
+
+  %% ---- Logout flow ----
+  D -->|Logout button| AU
+  AU -->|/accounts/logout/| SESS
+  SESS -->|clear session| DB
+  AU -->|redirect after logout| L
+
+  %% ---- Admin config dependencies ----
+  DJA -->|configure| SITE
+  DJA -->|configure| SA
+  SA -->|enables provider| AU
+  SITE -->|binds SocialApp to domain| AU
+
+  %% ---- Notes / styling ----
+  classDef client fill:#e8f0fe,stroke:#1a73e8,stroke-width:1px
+  classDef server fill:#e6f4ea,stroke:#188038,stroke-width:1px
+  classDef external fill:#fff7e6,stroke:#b06000,stroke-width:1px
+  classDef storage fill:#f3f4f6,stroke:#6b7280,stroke-width:1px
+
+  class U,N,L,D,MW,AX client
+  class AU,DJA,API,SESS,SITE,SA server
+  class G external
+  class DB storage
 ```
 
 Observações rápidas:
