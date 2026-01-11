@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { http } from "@/lib/http";
+import AvatarInput from "@/components/auth/AvatarInput";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
 
 type ApiError = Record<string, string[] | string>;
@@ -70,6 +71,8 @@ export default function RegisterPage() {
   const [globalErrors, setGlobalErrors] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
   const canSubmit = useMemo(() => {
     const passOk =
       password1 === password2 &&
@@ -98,6 +101,14 @@ export default function RegisterPage() {
         password1,
         password2,
       });
+
+      if (avatarFile) {
+        const form = new FormData();
+        form.append("avatar", avatarFile);
+        await http.post("/api/profile/avatar/", form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
 
       router.push("/dashboard");
     } catch (e: any) {
@@ -133,6 +144,19 @@ export default function RegisterPage() {
         )}
 
         <div className="mt-6 space-y-3">
+          <div>
+            <label className="text-sm text-slate-700 dark:text-slate-300">
+              Foto de perfil (opcional)
+            </label>
+            <div className="mt-2">
+              <AvatarInput
+                displayName={username || email}
+                value={avatarFile}
+                onChange={setAvatarFile}
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-sm text-slate-700 dark:text-slate-300">
               E-mail
@@ -181,8 +205,9 @@ export default function RegisterPage() {
             <input
               value={username}
               onChange={(e) => {
-                setUsernameDirty(true);
-                setUsername(e.target.value);
+                const v = sanitizeUsername(e.target.value);
+                setUsername(v);
+                setUsernameDirty(v.length > 0);
               }}
               className="mt-1 w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-slate-900 dark:text-slate-100"
               type="text"

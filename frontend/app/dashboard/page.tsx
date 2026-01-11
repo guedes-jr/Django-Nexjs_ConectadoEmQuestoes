@@ -80,18 +80,6 @@ export default function DashboardPage() {
       <AppHeader userName={fullName} />
 
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Meu Painel
-          </div>
-          <button
-            onClick={logout}
-            className="h-10 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-slate-900 dark:text-slate-100"
-          >
-            Sair
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 gap-6">
           <HeroActions
             greeting={loading ? "Carregando..." : `Boa tarde, ${fullName}!`}
