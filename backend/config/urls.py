@@ -7,11 +7,18 @@ from apps.core.api import upload_avatar
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
-    
+
     # Authentication APIs
     path("api/auth/", include("dj_rest_auth.urls")),
     path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
+
+    # Core API
     path("api/", include("apps.core.urls")),
+
+    # Sketches API
+    path("api/", include("apps.sketches.urls")),
+
+    # Profile
     path("api/profile/avatar/", upload_avatar),
 ]
 
