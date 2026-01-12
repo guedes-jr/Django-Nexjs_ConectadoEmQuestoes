@@ -7,11 +7,28 @@ import { useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useMe } from "@/lib/useMe";
 
+import {
+  Trophy,
+  Presentation,
+  MessagesSquare,
+  Library,
+  Sparkles,
+  User,
+  BarChart3,
+  CalendarClock,
+  StickyNote,
+  LogOut,
+  Medal,
+  FileText,
+  ClipboardList,
+} from "lucide-react";
+
+
 const NAV = [
   { label: "Meu Painel", href: "/dashboard" },
   { label: "Questões", href: "/questions" },
   { label: "Provas", href: "/exams" },
-  { label: "ChatGPT", href: "/chat" },
+  { label: "ChatIA", href: "/chatIA" },
   { label: "Área de Estudos", href: "/study" },
   { label: "Planos", href: "/plans" },
 ];
@@ -110,11 +127,10 @@ export function AppHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-1.5 text-sm rounded-md transition ${
-                active
-                  ? "bg-white text-blue-600 font-semibold"
-                  : "hover:bg-white/20"
-              }`}
+              className={`px-3 py-1.5 text-sm rounded-md transition ${active
+                ? "bg-white text-blue-600 font-semibold"
+                : "hover:bg-white/20"
+                }`}
             >
               {item.label}
             </Link>
@@ -131,19 +147,65 @@ export function AppHeader() {
           </button>
 
           {openMore && (
-            <div className="absolute top-full right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg overflow-hidden">
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-lg bg-blue-600 text-white shadow-xl ring-1 ring-black/10">
+
+              {/* GERAL */}
               <Link
                 href="/ranking"
-                className="block px-4 py-2 hover:bg-gray-100"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
               >
-                Ranking
+                <Trophy className="h-5 w-5 text-white/90" />
+                Ranking de Usuários
               </Link>
+
               <Link
-                href="/estatisticas"
-                className="block px-4 py-2 hover:bg-gray-100"
+                href="/lousa"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
               >
-                Estatísticas
+                <Presentation className="h-5 w-5 text-white/90" />
+                Lousa Digital
+                <Sparkles className="ml-auto h-4 w-4 text-yellow-300" />
               </Link>
+
+              <Link
+                href="/forums"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+              >
+                <MessagesSquare className="h-5 w-5 text-white/90" />
+                Fóruns
+              </Link>
+
+              <Link
+                href="/library"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+              >
+                <Library className="h-5 w-5 text-white/90" />
+                Biblioteca
+              </Link>
+
+              <div className="my-2 h-px bg-white/10" />
+
+              {/* CONCURSOS */}
+              <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">
+                Concursos
+              </div>
+
+              <Link
+                href="/concursos"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+              >
+                <Medal className="h-5 w-5 text-yellow-300" />
+                Painel de Concursos
+              </Link>
+
+              <Link
+                href="/concursos/editais"
+                className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+              >
+                <ClipboardList className="h-5 w-5 text-white/90" />
+                Editais
+              </Link>
+
             </div>
           )}
         </div>
@@ -207,18 +269,49 @@ export function AppHeader() {
               </button>
 
               {openUser && (
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white text-black rounded-md shadow-lg overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-lg bg-blue-600 text-white shadow-xl ring-1 ring-black/10">
+
                   <Link
                     href="/profile"
-                    className="block px-4 py-2 hover:bg-gray-100"
+                    className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
                   >
+                    <User className="h-5 w-5 text-white/90" />
                     Meu Perfil
                   </Link>
+
+                  <Link
+                    href="/profile/stats"
+                    className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+                  >
+                    <BarChart3 className="h-5 w-5 text-white/90" />
+                    Estatísticas
+                  </Link>
+
+                  <Link
+                    href="/profile/schedule"
+                    className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+                  >
+                    <CalendarClock className="h-5 w-5 text-white/90" />
+                    Cronograma de Estudos
+                    <Sparkles className="ml-auto h-4 w-4 text-yellow-300" />
+                  </Link>
+
+                  <Link
+                    href="/profile/notes"
+                    className="flex items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
+                  >
+                    <StickyNote className="h-5 w-5 text-white/90" />
+                    Anotações
+                  </Link>
+
+                  <div className="my-1 h-px bg-white/10" />
+
                   <button
                     onClick={logout}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     type="button"
+                    className="flex w-full items-center gap-3 px-4 py-2 text-sm transition hover:bg-blue-700"
                   >
+                    <LogOut className="h-5 w-5 text-red-300" />
                     Sair
                   </button>
                 </div>
