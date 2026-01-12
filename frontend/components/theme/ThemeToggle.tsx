@@ -1,32 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme, effectiveTheme } = useTheme();
-  const isDark = effectiveTheme === "dark";
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const { theme, effectiveTheme, setTheme } = useTheme();
+
+  const toggle = () => {
+    const next = effectiveTheme === "dark" ? "light" : "dark";
+    setTheme(next);
+
+    const html = document.documentElement;
+    if (next === "dark") html.classList.add("dark");
+    else html.classList.remove("dark");
+
+    localStorage.setItem("cq_theme", next);
+  };
 
   return (
     <button
-      onClick={toggleTheme}
       type="button"
-      aria-pressed={mounted ? isDark : undefined}
-      title={
-        mounted ? `Tema atual: ${theme} (efetivo: ${effectiveTheme})` : "Alterar tema"
-      }
-      className="h-9 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-sm flex items-center gap-2 select-none"
+      onClick={toggle}
+      className="h-8 w-8 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center"
+      aria-label="Alternar tema"
+      title={theme}
     >
-      <span aria-hidden className="text-sm">
-        {mounted ? (isDark ? "🌙" : "☀️") : "🌗"}
-      </span>
-      <span className="hidden sm:inline">
-        {mounted ? (isDark ? "Escuro" : "Claro") : "Tema"}
-      </span>
+      {effectiveTheme === "dark" ? "🌙" : "☀️"}
     </button>
   );
 }
-
-export default ThemeToggle;

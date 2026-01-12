@@ -1,25 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { http } from "@/lib/http";
 
-type Me = {
+export type Me = {
   id: number;
   email: string;
   username: string;
-  avatar: string | null;
-  social_avatar: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar?: string | null;
+  social_avatar?: string | null;
 };
 
-export function useMe() {
-  const [me, setMe] = useState<Me | null>(null);
+type UseMeResult = {
+  me: Me | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  refresh: () => Promise<void>;
+};
 
-  useEffect(() => {
-    http
-      .get("/api/me/")
-      .then((r) => setMe(r.data))
-      .catch(() => setMe(null));
+export function useMe(): UseMeResult {
+  const [me, setMe] = useState<Me | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await http.get<Me>("/api/me/");
+      setMe(res.data);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        setMe(null);
+      } else {
+        console.error("useMe error:", err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return me;
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return {
+    me,
+    isLoading,
+    isAuthenticated: !isLoading && me !== null,
+    refresh,
+  };
 }

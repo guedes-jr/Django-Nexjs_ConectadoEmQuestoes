@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useMe } from "@/lib/useMe";
 
@@ -49,30 +49,38 @@ function normalizeAvatarUrl(url: string | null) {
   }
 
   if (trimmed.startsWith("/")) {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    const base =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
     return `${base.replace(/\/$/, "")}${trimmed}`;
   }
 
   return trimmed;
 }
 
-
 export function AppHeader() {
   const pathname = usePathname();
   const [openMore, setOpenMore] = useState(false);
   const [openUser, setOpenUser] = useState(false);
 
-  const me = useMe();
+  const { me, isLoading, isAuthenticated } = useMe();
+
+  useEffect(() => {
+    setOpenMore(false);
+    setOpenUser(false);
+  }, [pathname]);
 
   const displayName = useMemo(() => pickDisplayName(me), [me]);
-  const initials = useMemo(() => getInitialsFromText(displayName), [displayName]);
+  const initials = useMemo(
+    () => getInitialsFromText(displayName),
+    [displayName]
+  );
 
   const avatarUrl = useMemo(() => {
-    const uploaded = normalizeAvatarUrl(me?.avatar ?? null);
-    if (uploaded) return uploaded;
-
     const social = normalizeAvatarUrl(me?.social_avatar ?? null);
     if (social) return social;
+
+    const uploaded = normalizeAvatarUrl(me?.avatar ?? null);
+    if (uploaded) return uploaded;
 
     return null;
   }, [me]);
@@ -124,7 +132,10 @@ export function AppHeader() {
 
           {openMore && (
             <div className="absolute top-full right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg overflow-hidden">
-              <Link href="/ranking" className="block px-4 py-2 hover:bg-gray-100">
+              <Link
+                href="/ranking"
+                className="block px-4 py-2 hover:bg-gray-100"
+              >
                 Ranking
               </Link>
               <Link
@@ -152,46 +163,67 @@ export function AppHeader() {
         <ThemeToggle />
 
         <div className="relative">
-          <button
-            onClick={() => setOpenUser((v) => !v)}
-            className="flex flex-col items-center"
-            type="button"
-          >
+          {isLoading ? (
             <div className="hidden sm:flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2">
-              <div className="h-7 w-7 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-xs font-bold">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt="Foto de perfil"
-                    width={28}
-                    height={28}
-                    className="h-7 w-7 object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="text-white">{initials}</span>
-                )}
+              <div className="h-7 w-7 rounded-full bg-white/20 overflow-hidden">
+                <div className="h-7 w-7 animate-pulse bg-white/20" />
               </div>
-
-              <div className="text-sm font-medium truncate max-w-[160px]">
-                {me?.username || "Usuário"}
-              </div>
+              <div className="text-sm font-medium opacity-80">Carregando...</div>
             </div>
-          </button>
-
-          {openUser && (
-            <div className="absolute right-0 top-full mt-2 w-40 bg-white text-black rounded-md shadow-lg overflow-hidden">
-              <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">
-                Meu Perfil
-              </Link>
+          ) : !isAuthenticated ? (
+            <Link
+              href="/login"
+              className="hidden sm:flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2 text-sm font-medium"
+            >
+              Entrar
+            </Link>
+          ) : (
+            <>
               <button
-                onClick={logout}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => setOpenUser((v) => !v)}
+                className="flex flex-col items-center"
                 type="button"
               >
-                Sair
+                <div className="hidden sm:flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2">
+                  <div className="h-7 w-7 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-xs font-bold">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt="Foto de perfil"
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="text-white">{initials}</span>
+                    )}
+                  </div>
+
+                  <div className="text-sm font-medium truncate max-w-[160px]">
+                    {displayName}
+                  </div>
+                </div>
               </button>
-            </div>
+
+              {openUser && (
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white text-black rounded-md shadow-lg overflow-hidden">
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Meu Perfil
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    type="button"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

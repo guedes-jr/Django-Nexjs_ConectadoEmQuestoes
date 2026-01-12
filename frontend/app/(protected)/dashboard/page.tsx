@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { http } from "@/lib/http";
-import { AppHeader } from "@/components/layout/AppHeader";
+import { useEffect, useMemo } from "react";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { HeroActions } from "@/components/dashboard/HeroActions";
@@ -11,65 +9,38 @@ import { PerformanceByDiscipline } from "@/components/dashboard/PerformanceByDis
 import { AppearanceCard } from "@/components/dashboard/AppearanceCard";
 import { QuickLinks } from "@/components/dashboard/QuickLinks";
 import { useTheme } from "@/components/theme/ThemeProvider";
-
-type User = {
-  pk: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-};
+import { useMe } from "@/lib/useMe";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { me, isLoading } = useMe();
 
-  // DEBUG: tema (do ThemeProvider)
   const { theme: selectedTheme, effectiveTheme } = useTheme();
 
   const fullName = useMemo(() => {
-    if (!user) return "Usuário";
-    const name = `${user.first_name || ""} ${user.last_name || ""}`.trim();
-    return name || user.username || "Usuário";
-  }, [user]);
+    if (!me) return "Usuário";
+    const name = `${me.first_name || ""} ${me.last_name || ""}`.trim();
+    return name || me.username || "Usuário";
+  }, [me]);
 
   useEffect(() => {
-    // Repare: http deve estar configurado com withCredentials: true
-    let mounted = true;
-    http
-      .get("/api/auth/user/")
-      .then((res) => {
-        if (!mounted) return;
-        setUser(res.data);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setUser(null);
-      })
-      .finally(() => mounted && setLoading(false));
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    // DEBUG logs para ajudar a diagnosticar tema
     try {
       const stored = localStorage.getItem("cq_theme");
       const htmlHas = document.documentElement.classList.contains("dark");
       const bodyHas = document.body.classList.contains("dark");
       document.body.setAttribute("data-effective-theme", effectiveTheme);
-      console.info("[THEME DEBUG] stored:", stored, "selected:", selectedTheme, "effective:", effectiveTheme);
+      console.info(
+        "[THEME DEBUG] stored:",
+        stored,
+        "selected:",
+        selectedTheme,
+        "effective:",
+        effectiveTheme
+      );
       console.info("[THEME DEBUG] htmlHasDark:", htmlHas, "bodyHasDark:", bodyHas);
-    } catch (e) {
+    } catch {
       /* noop */
     }
   }, [selectedTheme, effectiveTheme]);
-
-  const logout = () => {
-    window.location.href = "http://localhost:8000/accounts/logout/";
-  };
 
   const resolveNow = () => {
     alert("Aqui você vai abrir a tela de questões.");
@@ -77,12 +48,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <AppHeader userName={fullName} />
-
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="grid grid-cols-1 gap-6">
           <HeroActions
-            greeting={loading ? "Carregando..." : `Boa tarde, ${fullName}!`}
+            greeting={isLoading ? "Carregando..." : `Boa tarde, ${fullName}!`}
             quote="A persistência transforma sonhos em conquistas. Você está no caminho certo."
             onResolve={resolveNow}
           />
