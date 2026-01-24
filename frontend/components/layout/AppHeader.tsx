@@ -234,7 +234,7 @@ export function AppHeader() {
             </div>
           ) : !isAuthenticated ? (
             <Link
-              href="/login"
+              href="/"
               className="hidden sm:flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2 text-sm font-medium"
             >
               Entrar

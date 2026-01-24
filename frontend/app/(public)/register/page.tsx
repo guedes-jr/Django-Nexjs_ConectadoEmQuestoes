@@ -276,7 +276,7 @@ export default function RegisterPage() {
 
         <div className="mt-4 text-sm">
           <Link
-            href="/login"
+            href="/"
             className="text-slate-600 dark:text-slate-400 hover:underline"
           >
             Voltar para login

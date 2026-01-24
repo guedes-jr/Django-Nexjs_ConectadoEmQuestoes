@@ -104,7 +104,7 @@ JWT_AUTH_REFRESH_COOKIE = "refresh"
 JWT_AUTH_HTTPONLY = True
 
 LOGIN_REDIRECT_URL = "http://localhost:3000/dashboard"
-LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
+LOGOUT_REDIRECT_URL = "http://localhost:3000"
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
