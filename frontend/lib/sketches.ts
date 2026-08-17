@@ -9,7 +9,7 @@ export type Sketch = {
 };
 
 export async function listSketches(): Promise<Sketch[]> {
-  const res = await http.get("/api/sketches/");
+  const res = await http.get("/api/sketches/recent/");
   return res.data;
 }
 

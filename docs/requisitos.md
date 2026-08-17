@@ -1,52 +1,30 @@
-## Lista de requisitos
+## Estado dos requisitos
 
-### Estrutura:
-- [X] Tecnologias; 
-- [X] Estrtura base; 
-- [X] Comucação entre backend e frontend.
+### Estrutura e autenticação
+- [x] Backend Django/DRF e frontend Next.js integrados
+- [x] Login por e-mail/senha e Google OAuth
+- [x] Cadastro, logout, recuperação e alteração de senha via API
+- [x] Perfis com dados pessoais e preferências de estudo
 
-### Autenticação:
-- [X] Login com gmail; 
-- [X] Login com e-mail e senha; 
-- [X] Cadastro de novos usuários; 
-- [ ] Recuperação de senha.
+### Estudos
+- [x] Dashboard e estatísticas reais
+- [x] Questões: listagem, filtros, resposta, favoritos, anotações, comentários e erros
+- [x] Provas: listagem, filtros e respectivas questões
+- [x] Lousa: criar, editar, salvar, excluir e listar os dez últimos rascunhos
+- [x] Importação idempotente de provas/questões em JSON ou CSV
+- [x] Administração de conteúdo pelo Django Admin
 
-### Perfil
-- [X] Dados pessoais; 
-- [ ] Estatisticas; 
-- [ ] Anotações; 
-- [X] Logout; 
-- [ ] Alteração de senha.
+### Chat e planos
+- [x] Conversas persistentes e isoladas por usuário
+- [x] Contexto real de provas, questões e desempenho
+- [x] Assistência local e integração opcional com OpenAI
+- [x] Limites diários, auditoria de provedor/modelo/tokens e permissões por plano
+- [x] Catálogo e seleção de planos
+- [ ] Checkout, webhooks, renovação e cancelamento financeiro reais
+- [x] Ferramenta avançada de contexto de provas/questões restrita ao plano Avançado
+- [ ] Simulados completos com IA e biblioteca de materiais (expansões futuras)
 
-### Dashboard:
-- [X] dashboard do sistema.
-
-### Questões    
-- [ ] Lista de questões;
-- [ ] comentários;
-- [ ] Estatisticas;
-- [ ] Criara anotações;
-- [ ] Favoritar;
-- [ ] Notificar Erro;
-- [ ] Responder.
-
-### Provas
-- [ ] Listar provas;
-- [ ] Filtros de pesquisa;
-- [ ] Mostrar lista de questoes referentes a essa prova.
-
-### Lousa mágica
-- [ ] Criar rascunho;
-- [ ] Listar ultimos 10 rascunhos;
-- [ ] Etidar, salvar e deletar rascunhos.
-
-### Chat IA
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
-- [ ] Iniciar conversas;
+### Produção
+- [ ] Provedor SMTP/API transacional
+- [ ] PostgreSQL, armazenamento de mídia e backups
+- [ ] CI/CD, monitoramento de erros e testes E2E do frontend

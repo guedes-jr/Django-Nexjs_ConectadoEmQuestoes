@@ -6,9 +6,14 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret")
-DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+def env_list(name: str, default: str = "") -> list[str]:
+    """Return a clean comma-separated environment variable as a list."""
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -30,7 +35,22 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.users",
     "apps.sketches",
+    "apps.questions",
+    "apps.chat",
+    "apps.billing",
 ]
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
+OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/responses")
+OPENAI_TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", "45"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@conectadoemquestoes.local")
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "false").lower() == "true"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -103,37 +123,26 @@ JWT_AUTH_COOKIE = "access"
 JWT_AUTH_REFRESH_COOKIE = "refresh"
 JWT_AUTH_HTTPONLY = True
 
-LOGIN_REDIRECT_URL = "http://localhost:3000/dashboard"
-LOGOUT_REDIRECT_URL = "http://localhost:3000"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/dashboard"
+LOGOUT_REDIRECT_URL = FRONTEND_URL
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
-
-ACCOUNT_EMAIL_REQUIRED = True
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-CORS_ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000",
-).split(",")
-
-CORS_ALLOWED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:3000",
-).split(",")
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 CORS_ALLOW_CREDENTIALS = True
 
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {

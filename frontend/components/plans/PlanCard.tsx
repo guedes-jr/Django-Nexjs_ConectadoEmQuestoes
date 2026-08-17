@@ -47,9 +47,12 @@ function Badge({ label, tone }: { label: string; tone: "orange" | "green" }) {
 type Props = {
   plan: Plan;
   cycle: BillingCycle;
+  onSelect: () => void;
+  selected?: boolean;
+  loading?: boolean;
 };
 
-export default function PlanCard({ plan, cycle }: Props) {
+export default function PlanCard({ plan, cycle, onSelect, selected, loading }: Props) {
   const price = plan.price[cycle];
   const accent: Accent = plan.accent;
 
@@ -108,13 +111,14 @@ export default function PlanCard({ plan, cycle }: Props) {
       <div className="mt-8">
         <button
           type="button"
-          disabled={plan.cta.disabled}
+          disabled={selected || loading}
+          onClick={onSelect}
           className={[
             "w-full rounded-xl px-4 py-2.5 text-sm font-bold transition",
             ACCENT[accent].button,
           ].join(" ")}
         >
-          {plan.cta.label}
+          {loading ? "Processando…" : selected ? "Plano atual" : plan.cta.label}
         </button>
       </div>
     </div>

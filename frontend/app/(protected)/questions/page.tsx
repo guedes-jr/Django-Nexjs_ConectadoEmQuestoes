@@ -1,384 +1,228 @@
+"use client";
 
-// import React, { useState, useEffect, useCallback } from "react";
-// import { Question, UserAnswer, User, ResponseHistory } from "@/entities/all";
-// import { Button } from "@/components/ui/button";
-// import {
-//   RefreshCw,
-//   Award,
-//   AlertTriangle,
-//   FileText,
-//   // BookCopy, // This import is no longer directly used and ExamList is removed.
-//   Plus,
-//   Minus
-// } from "lucide-react";
-// import { motion } from "framer-motion";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { AlertTriangle, Bookmark, MessageSquare, Search, StickyNote } from "lucide-react";
 
-// import QuestionFilters from "../components/questions/QuestionFilters";
-// import QuestionList from "../components/questions/QuestionList";
-// // import ExamList from "../components/exams/ExamList"; // This component is removed from the outline, so removing its import.
-// import Pagination from "../components/questions/Pagination";
-// import { ThemeToggle } from "../components/ui/theme-toggle";
-// import { Toaster } from "@/components/ui/sonner";
+import {
+  AnswerResult,
+  Question,
+  QuestionComment,
+  answerQuestion,
+  createComment,
+  deleteComment,
+  getNote,
+  listComments,
+  listQuestions,
+  reportQuestion,
+  saveNote,
+  toggleFavorite,
+} from "@/lib/questions";
 
-// const shuffleArray = (array) => {
-//   let currentIndex = array.length,  randomIndex;
-//   while (currentIndex !== 0) {
-//     randomIndex = Math.floor(Math.random() * currentIndex);
-//     currentIndex--;
-//     [array[currentIndex], array[randomIndex]] = [
-//       array[randomIndex], array[currentIndex]];
-//   }
-//   return array;
-// };
 
-// export default function Questions() {
-//   const [allQuestions, setAllQuestions] = useState([]);
-//   const [filteredQuestions, setFilteredQuestions] = useState([]);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [userAnswers, setUserAnswers] = useState({});
-//   const [submittedAnswers, setSubmittedAnswers] = useState({});
-//   const [responseHistory, setResponseHistory] = useState({});
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [currentUser, setCurrentUser] = useState(null);
-//   const [stats, setStats] = useState({ submitted: 0, correct: 0, accuracy: 0 });
-//   // const [viewMode, setViewMode] = useState("questions"); // Removed as Tabs component is removed
-//   const [layoutMode, setLayoutMode] = useState(() => {
-//     return localStorage.getItem('questions-layout') || 'classic'; // Alterado de 'compact' para 'classic'
-//   });
-//   const [fontSize, setFontSize] = useState(1);
+type OpenPanel = "note" | "comments" | "report" | null;
 
-//   const questionsPerPage = 10;
+function getErrorMessage(error: unknown) {
+  if (typeof error === "object" && error && "response" in error) {
+    const response = (error as { response?: { data?: unknown } }).response;
+    if (typeof response?.data === "object" && response.data) {
+      const value = Object.values(response.data).flat().find((item) => typeof item === "string");
+      if (typeof value === "string") return value;
+    }
+  }
+  return "Não foi possível concluir a operação.";
+}
 
-//   const loadQuestions = useCallback(async () => {
-//     setIsLoading(true);
-//     if (!currentUser) {
-//         setIsLoading(false);
-//         return;
-//     }
-//     try {
-//       const questionsData = await Question.list("-created_date", 1000);
-//       const shuffledQuestions = shuffleArray([...questionsData]);
-//       setAllQuestions(shuffledQuestions);
-      
-//       // Aplicar filtros iniciais com base nas preferências do usuário
-//       let initialFiltered = shuffledQuestions;
-//       if (currentUser) {
-//         if (currentUser.preferred_subjects && currentUser.preferred_subjects.length > 0) {
-//             initialFiltered = initialFiltered.filter(q => currentUser.preferred_subjects.includes(q.subject));
-//         }
-//         if (currentUser.target_position) {
-//             initialFiltered = initialFiltered.filter(q => q.cargo === currentUser.target_position);
-//         }
-//       }
-//       setFilteredQuestions(initialFiltered);
-      
-//       setCurrentPage(1);
+export default function QuestionsPage() {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [discipline, setDiscipline] = useState("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [examId, setExamId] = useState<number | undefined>();
+  const [queryReady, setQueryReady] = useState(false);
+  const [selected, setSelected] = useState<Record<number, number>>({});
+  const [results, setResults] = useState<Record<number, AnswerResult>>({});
+  const [openPanels, setOpenPanels] = useState<Record<number, OpenPanel>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [comments, setComments] = useState<Record<number, QuestionComment[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({});
+  const [reportDrafts, setReportDrafts] = useState<Record<number, string>>({});
+  const [messages, setMessages] = useState<Record<number, string>>({});
 
-//       const historyData = await ResponseHistory.filter({ created_by: currentUser.email });
-//       const historyByQuestion = {};
-      
-//       historyData.forEach(response => {
-//         if (!historyByQuestion[response.question_id] || 
-//             new Date(response.created_date) > new Date(historyByQuestion[response.question_id].created_date)) {
-//           historyByQuestion[response.question_id] = response;
-//         }
-//       });
-      
-//       setResponseHistory(historyByQuestion);
-//     } catch (error) {
-//       console.error("Erro ao carregar questões:", error);
-//     }
-//     setIsLoading(false);
-//   }, [currentUser]);
+  const loadQuestions = useCallback(async () => {
+    if (!queryReady) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await listQuestions({
+        search: search || undefined,
+        discipline: discipline || undefined,
+        favorites: favoritesOnly || undefined,
+        exam: examId,
+      });
+      setQuestions(data);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [discipline, examId, favoritesOnly, queryReady, search]);
 
-//   const getStats = useCallback(async () => {
-//     if (!currentUser) return { submitted: 0, correct: 0, accuracy: 0 };
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("exam");
+    setExamId(value && /^\d+$/.test(value) ? Number(value) : undefined);
+    setQueryReady(true);
+  }, []);
 
-//     try {
-//       const userAnswersData = await UserAnswer.filter({ created_by: currentUser.email });
-//       const submitted = userAnswersData.length;
-//       const correct = userAnswersData.filter(a => a.is_correct).length;
-//       const accuracy = submitted > 0 ? Math.round((correct / submitted) * 100) : 0;
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadQuestions(), 250);
+    return () => window.clearTimeout(timer);
+  }, [loadQuestions]);
 
-//       return { submitted, correct, accuracy };
-//     } catch (error) {
-//       console.error("Erro ao calcular estatísticas:", error);
-//       return { submitted: 0, correct: 0, accuracy: 0 };
-//     }
-//   }, [currentUser]);
+  async function submitAnswer(question: Question) {
+    const answer = selected[question.id];
+    if (answer === undefined) return;
+    try {
+      const result = await answerQuestion(question.id, answer);
+      setResults((current) => ({ ...current, [question.id]: result }));
+    } catch (requestError) {
+      setMessages((current) => ({ ...current, [question.id]: getErrorMessage(requestError) }));
+    }
+  }
 
-//   useEffect(() => {
-//     const loadUser = async () => {
-//       try {
-//         const user = await User.me();
-//         setCurrentUser(user);
-//       } catch (error) {
-//         console.error("Erro ao carregar usuário:", error);
-//       }
-//     };
-//     loadUser();
-//   }, []);
+  async function favorite(question: Question) {
+    const result = await toggleFavorite(question.id);
+    setQuestions((current) =>
+      favoritesOnly && !result.is_favorite
+        ? current.filter((item) => item.id !== question.id)
+        : current.map((item) =>
+            item.id === question.id ? { ...item, is_favorite: result.is_favorite } : item
+          )
+    );
+  }
 
-//   useEffect(() => {
-//     if (currentUser) {
-//       loadQuestions();
-//     }
-//   }, [loadQuestions, currentUser]);
+  async function openPanel(questionId: number, panel: OpenPanel) {
+    setOpenPanels((current) => ({ ...current, [questionId]: panel }));
+    if (panel === "note" && notes[questionId] === undefined) {
+      const content = await getNote(questionId);
+      setNotes((current) => ({ ...current, [questionId]: content }));
+    }
+    if (panel === "comments" && comments[questionId] === undefined) {
+      const loadedComments = await listComments(questionId);
+      setComments((current) => ({ ...current, [questionId]: loadedComments }));
+    }
+  }
 
-//   useEffect(() => {
-//     if (currentUser) {
-//       const updateStats = async () => {
-//         const newStats = await getStats();
-//         setStats(newStats);
-//       };
-//       updateStats();
-//     }
-//   }, [currentUser, getStats, submittedAnswers]);
+  async function submitComment(event: FormEvent, questionId: number) {
+    event.preventDefault();
+    const content = commentDrafts[questionId]?.trim();
+    if (!content) return;
+    const comment = await createComment(questionId, content);
+    setComments((current) => ({
+      ...current,
+      [questionId]: [...(current[questionId] ?? []), comment],
+    }));
+    setCommentDrafts((current) => ({ ...current, [questionId]: "" }));
+  }
 
-//   const handleFilterSubmit = useCallback((filters) => {
-//     console.log("Filtros aplicados:", filters);
-//     setIsLoading(true);
+  async function removeComment(questionId: number, commentId: number) {
+    await deleteComment(commentId);
+    setComments((current) => ({
+      ...current,
+      [questionId]: (current[questionId] ?? []).filter((comment) => comment.id !== commentId),
+    }));
+  }
 
-//     try {
-//       let tempFiltered = [...allQuestions];
+  async function submitReport(event: FormEvent, questionId: number) {
+    event.preventDefault();
+    try {
+      await reportQuestion(questionId, reportDrafts[questionId] ?? "");
+      setReportDrafts((current) => ({ ...current, [questionId]: "" }));
+      setMessages((current) => ({ ...current, [questionId]: "Erro enviado para análise." }));
+    } catch (requestError) {
+      setMessages((current) => ({ ...current, [questionId]: getErrorMessage(requestError) }));
+    }
+  }
 
-//       // Busca por texto no enunciado, comando e texto associado
-//       if (filters.keyword) {
-//         const lowercasedKeyword = filters.keyword.toLowerCase();
-//         tempFiltered = tempFiltered.filter(q => 
-//           (q.statement?.toLowerCase().includes(lowercasedKeyword)) ||
-//           (q.command?.toLowerCase().includes(lowercasedKeyword)) ||
-//           (q.associated_text?.toLowerCase().includes(lowercasedKeyword))
-//         );
-//       }
+  const disciplines = [...new Set(questions.map((question) => question.discipline))].sort();
 
-//       // Múltiplos filtros simultâneos
-//       if (filters.subjects && filters.subjects.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => filters.subjects.includes(q.subject));
-//       }
-//       if (filters.topics && filters.topics.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.topic && filters.topics.includes(q.topic));
-//       }
-//       if (filters.institutions && filters.institutions.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => filters.institutions.includes(q.institution));
-//       }
-//       if (filters.carreiras && filters.carreiras.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.carreira && filters.carreiras.includes(q.carreira));
-//       }
-//       if (filters.cargos && filters.cargos.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.cargo && filters.cargos.includes(q.cargo));
-//       }
-//       if (filters.years && filters.years.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.year && filters.years.includes(q.year.toString()));
-//       }
-//       if (filters.educationLevels && filters.educationLevels.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.education_level && filters.educationLevels.includes(q.education_level));
-//       }
-//       if (filters.difficulties && filters.difficulties.length > 0) {
-//         tempFiltered = tempFiltered.filter(q => q.difficulty && filters.difficulties.includes(q.difficulty));
-//       }
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{examId ? "Questões da prova" : "Questões de concursos"}</h1>
+          <p className="mt-1 text-slate-600 dark:text-slate-400">Responda, acompanhe tentativas e organize seus estudos.</p>
+        </header>
 
-//       console.log("Questões filtradas:", tempFiltered.length);
-//       setFilteredQuestions(shuffleArray(tempFiltered));
-//       setCurrentPage(1);
-//     } catch (error) {
-//       console.error("Erro ao filtrar questões:", error);
-//     }
+        <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:grid-cols-[1fr_220px_auto]">
+          <label className="relative">
+            <span className="sr-only">Pesquisar questões</span>
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar enunciado" className="h-10 w-full rounded-lg border border-slate-300 bg-transparent pl-9 pr-3 text-sm dark:border-slate-700" />
+          </label>
+          <select value={discipline} onChange={(event) => setDiscipline(event.target.value)} aria-label="Disciplina" className="h-10 rounded-lg border border-slate-300 bg-transparent px-3 text-sm dark:border-slate-700">
+            <option value="">Todas as disciplinas</option>
+            {disciplines.map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm dark:border-slate-700">
+            <input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} /> Favoritas
+          </label>
+        </section>
 
-//     setIsLoading(false);
-//   }, [allQuestions]);
+        {loading && <p className="text-slate-500">Carregando questões…</p>}
+        {error && <p className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
 
-//   const handleLayoutToggle = () => {
-//     const newLayout = layoutMode === 'compact' ? 'classic' : 'compact';
-//     setLayoutMode(newLayout);
-//     localStorage.setItem('questions-layout', newLayout);
-//   };
-  
-//   const increaseFontSize = () => {
-//     setFontSize(prev => Math.min(prev + 0.1, 1.5));
-//   };
+        <section className="space-y-5">
+          {questions.map((question, index) => {
+            const result = results[question.id];
+            const panel = openPanels[question.id];
+            return (
+              <article key={question.id} className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="text-xs font-medium text-slate-500">Questão {index + 1} · {question.discipline} · {question.banca} {question.year}</div>
+                  <button onClick={() => void favorite(question)} aria-label="Favoritar" className={question.is_favorite ? "text-amber-500" : "text-slate-400"}><Bookmark className="h-5 w-5" fill={question.is_favorite ? "currentColor" : "none"} /></button>
+                </div>
+                <p className="mt-4 font-medium text-slate-900 dark:text-slate-100">{question.statement}</p>
+                <div className="mt-4 space-y-2">
+                  {question.options.map((option, optionIndex) => {
+                    const isCorrect = result?.correct_answer === optionIndex;
+                    const isWrong = result && result.selected_answer === optionIndex && !result.is_correct;
+                    return (
+                      <label key={`${question.id}-${optionIndex}`} className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${isCorrect ? "border-green-500 bg-green-50 dark:bg-green-950" : isWrong ? "border-red-500 bg-red-50 dark:bg-red-950" : "border-slate-200 dark:border-slate-700"}`}>
+                        <input type="radio" name={`question-${question.id}`} checked={selected[question.id] === optionIndex} disabled={Boolean(result)} onChange={() => setSelected((current) => ({ ...current, [question.id]: optionIndex }))} />
+                        <span>{String.fromCharCode(65 + optionIndex)}. {option}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {!result ? (
+                  <button onClick={() => void submitAnswer(question)} disabled={selected[question.id] === undefined} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Responder</button>
+                ) : (
+                  <div className={`mt-4 rounded-lg p-4 text-sm ${result.is_correct ? "bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>
+                    <strong>{result.is_correct ? "Resposta correta." : "Resposta incorreta."}</strong>
+                    {result.explanation && <p className="mt-1">{result.explanation}</p>}
+                  </div>
+                )}
 
-//   const decreaseFontSize = () => {
-//     setFontSize(prev => Math.max(prev - 0.1, 0.8));
-//   };
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+                  <button onClick={() => void openPanel(question.id, panel === "note" ? null : "note")} className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><StickyNote className="h-4 w-4" /> Anotação</button>
+                  <button onClick={() => void openPanel(question.id, panel === "comments" ? null : "comments")} className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><MessageSquare className="h-4 w-4" /> Comentários ({comments[question.id]?.length ?? question.comment_count})</button>
+                  <button onClick={() => void openPanel(question.id, panel === "report" ? null : "report")} className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"><AlertTriangle className="h-4 w-4" /> Informar erro</button>
+                </div>
 
-//   const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
-//   const startIndex = (currentPage - 1) * questionsPerPage;
-//   const endIndex = startIndex + questionsPerPage;
-//   const currentQuestions = filteredQuestions.slice(startIndex, endIndex);
+                {panel === "note" && <div className="mt-4"><textarea value={notes[question.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Sua anotação privada" className="min-h-24 w-full rounded-lg border border-slate-300 bg-transparent p-3 text-sm dark:border-slate-700" /><button onClick={async () => { await saveNote(question.id, notes[question.id] ?? ""); setMessages((current) => ({ ...current, [question.id]: "Anotação salva." })); }} className="mt-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">Salvar anotação</button></div>}
 
-//   const handleAnswerChange = (questionId, answer) => {
-//     setUserAnswers(prev => ({
-//       ...prev,
-//       [questionId]: answer
-//     }));
-//   };
+                {panel === "comments" && <div className="mt-4 space-y-3">{(comments[question.id] ?? []).map((comment) => <div key={comment.id} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800"><div className="flex justify-between"><strong>{comment.author}</strong>{comment.is_owner && <button onClick={() => void removeComment(question.id, comment.id)} className="text-xs text-red-600">Excluir</button>}</div><p className="mt-1">{comment.content}</p></div>)}<form onSubmit={(event) => void submitComment(event, question.id)} className="flex gap-2"><input value={commentDrafts[question.id] ?? ""} onChange={(event) => setCommentDrafts((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Adicionar comentário" className="h-10 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 text-sm dark:border-slate-700" /><button className="rounded-lg bg-blue-600 px-4 text-sm text-white">Enviar</button></form></div>}
 
-//   const handleSubmitAnswer = async (question) => {
-//     const userAnswer = userAnswers[question.id];
-//     if (!userAnswer) return;
-
-//     const isCorrect = userAnswer === question.correct_answer;
-    
-//     const previousAttempts = await ResponseHistory.filter({ 
-//       question_id: question.id, 
-//       created_by: currentUser.email 
-//     });
-//     const attemptNumber = previousAttempts.length + 1;
-
-//     const historyData = {
-//       question_id: question.id,
-//       user_answer: userAnswer,
-//       correct_answer: question.correct_answer,
-//       is_correct: isCorrect,
-//       subject: question.subject,
-//       institution: question.institution,
-//       attempt_number: attemptNumber
-//     };
-
-//     try {
-//       const savedHistory = await ResponseHistory.create(historyData);
-      
-//       setResponseHistory(prev => ({
-//         ...prev,
-//         [question.id]: savedHistory
-//       }));
-
-//       const answerData = {
-//         question_id: question.id,
-//         user_answer: userAnswer,
-//         is_correct: isCorrect,
-//         subject: question.subject,
-//         institution: question.institution
-//       };
-
-//       await UserAnswer.create(answerData);
-//       setSubmittedAnswers(prev => ({
-//         ...prev,
-//         [question.id]: {
-//           userAnswer,
-//           isCorrect,
-//           submitted: true
-//         }
-//       }));
-//     } catch (error) {
-//       console.error("Erro ao salvar resposta:", error);
-//     }
-//   };
-
-//   if (isLoading && (allQuestions.length === 0 || currentUser === null)) {
-//     return (
-//       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
-//         <div className="text-center">
-//           <RefreshCw className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
-//           <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Carregando questões...</p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-white dark:bg-gray-900 p-3 md:p-8">
-//       <Toaster richColors position="top-center" />
-//       <div className="max-w-7xl mx-auto">
-//         <motion.div
-//           initial={{ opacity: 0, y: -20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           className="flex flex-col gap-4 mb-6 md:mb-8"
-//         >
-//           <div>
-//             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-//               Questões de Concursos Públicos
-//             </h1>
-//             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
-//               <span>
-//                 {allQuestions.length} questões disponíveis
-//               </span>
-//               <span className="flex items-center gap-1">
-//                 <Award className="w-4 h-4" />
-//                 {stats.accuracy}% de acerto ({stats.correct}/{stats.submitted})
-//               </span>
-//             </div>
-//           </div>
-//           <div className="flex items-center gap-3 justify-end">
-//             <div className="flex items-center">
-//               <Button
-//                 variant="outline"
-//                 size="sm"
-//                 onClick={decreaseFontSize}
-//                 className="rounded-r-none"
-//               >
-//                 <Minus className="w-4 h-4 mr-1" /> A
-//               </Button>
-//               <Button
-//                 variant="outline"
-//                 size="sm"
-//                 onClick={increaseFontSize}
-//                 className="rounded-l-none border-l-0"
-//               >
-//                 A <Plus className="w-4 h-4 ml-1" />
-//               </Button>
-//             </div>
-//             <Button
-//               variant="outline"
-//               size="sm"
-//               onClick={handleLayoutToggle}
-//               className="flex items-center gap-2"
-//             >
-//               <FileText className="w-4 h-4" />
-//               {layoutMode === 'compact' ? 'Layout Clássico' : 'Layout Compacto'}
-//             </Button>
-//             <ThemeToggle />
-//           </div>
-//         </motion.div>
-
-//         <div className="w-full">
-//           <QuestionFilters onFilterSubmit={handleFilterSubmit} />
-
-//           <div className="space-y-4 md:space-y-6">
-//             {isLoading && allQuestions.length > 0 ? (
-//                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-//                   <RefreshCw className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-//                   <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Filtrando questões...</p>
-//                </div>
-//             ) : currentQuestions.length > 0 ? (
-//               <>
-//                 <QuestionList
-//                   questions={currentQuestions}
-//                   userAnswers={userAnswers}
-//                   submittedAnswers={submittedAnswers}
-//                   responseHistory={responseHistory}
-//                   onAnswerChange={handleAnswerChange}
-//                   onSubmitAnswer={handleSubmitAnswer}
-//                   currentPage={currentPage}
-//                   questionsPerPage={questionsPerPage}
-//                   layoutMode={layoutMode}
-//                   fontSize={fontSize}
-//                 />
-//                 {totalPages > 1 && (
-//                   <Pagination
-//                     currentPage={currentPage}
-//                     totalPages={totalPages}
-//                     onPageChange={setCurrentPage}
-//                     totalItems={filteredQuestions.length}
-//                     itemsPerPage={questionsPerPage}
-//                   />
-//                 )}
-//               </>
-//             ) : (
-//               <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg mx-3">
-//                 <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
-//                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-//                   Nenhuma questão encontrada
-//                 </h3>
-//                 <p className="text-gray-600 dark:text-gray-400 mb-4 px-4">
-//                   Tente ajustar os filtros para encontrar o que procura.
-//                 </p>
-//               </div>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
+                {panel === "report" && <form onSubmit={(event) => void submitReport(event, question.id)} className="mt-4"><textarea value={reportDrafts[question.id] ?? ""} onChange={(event) => setReportDrafts((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Descreva o problema encontrado (mínimo de 10 caracteres)" className="min-h-24 w-full rounded-lg border border-slate-300 bg-transparent p-3 text-sm dark:border-slate-700" /><button className="mt-2 rounded-lg bg-red-600 px-3 py-2 text-sm text-white">Enviar relatório</button></form>}
+                {messages[question.id] && <p role="status" className="mt-3 text-sm text-slate-600 dark:text-slate-300">{messages[question.id]}</p>}
+              </article>
+            );
+          })}
+          {!loading && !error && questions.length === 0 && <p className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500 dark:border-slate-700">Nenhuma questão encontrada.</p>}
+        </section>
+      </div>
+    </main>
+  );
+}

@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/lib/useMe";
 import { http } from "@/lib/http";
+import { getStatistics, Statistics } from "@/lib/statistics";
 
 type StudyDiscipline =
   | "Português"
@@ -187,6 +188,7 @@ export default function ProfilePage() {
   const [tab, setTab] = useState<TabKey>("profile");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
     first_name: "",
@@ -203,6 +205,7 @@ export default function ProfilePage() {
 
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace("/");
@@ -253,6 +256,7 @@ export default function ProfilePage() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveMessage(null);
     try {
       const payload: Partial<MePayload> = {
         first_name: form.first_name,
@@ -271,6 +275,17 @@ export default function ProfilePage() {
 
       await http.patch("/api/me/", payload);
       await refresh();
+      setSaveMessage("Perfil atualizado com sucesso.");
+    } catch (error: any) {
+      const data = error?.response?.data;
+      const firstError = data && typeof data === "object"
+        ? Object.values(data).flat().find((item) => typeof item === "string")
+        : null;
+      setSaveMessage(
+        typeof firstError === "string"
+          ? firstError
+          : "Não foi possível atualizar o perfil."
+      );
     } finally {
       setSaving(false);
     }
@@ -288,40 +303,29 @@ export default function ProfilePage() {
     });
   }
 
-  async function loadHistoryIfNeeded() {
+  const loadHistoryIfNeeded = useCallback(async () => {
     if (historyItems.length > 0) return;
     setHistoryLoading(true);
     try {
-      // placeholder: troque por endpoint real quando existir (ex: /api/history/)
-      const fake: HistoryItem[] = [
-        {
-          id: "1",
-          date: "2026-01-12",
-          title: "Login",
-          detail: "Acesso realizado com sucesso.",
-        },
-        {
-          id: "2",
-          date: "2026-01-11",
-          title: "Avatar atualizado",
-          detail: "Sua foto de perfil foi alterada.",
-        },
-        {
-          id: "3",
-          date: "2026-01-10",
-          title: "Cadastro",
-          detail: "Conta criada e perfil inicial configurado.",
-        },
-      ];
-      setHistoryItems(fake);
+      const data = statistics ?? await getStatistics();
+      setStatistics(data);
+      setHistoryItems(data.recent_activity.map((item) => ({
+        id: String(item.id),
+        date: new Date(item.date).toLocaleString("pt-BR"),
+        title: item.is_correct ? "Questão respondida corretamente" : "Questão respondida incorretamente",
+        detail: `${item.discipline} · Questão ${item.question_id}`,
+      })));
     } finally {
       setHistoryLoading(false);
     }
-  }
+  }, [historyItems.length, statistics]);
 
   useEffect(() => {
     if (tab === "history") void loadHistoryIfNeeded();
-  }, [tab]);
+    if (tab === "stats" && !statistics) {
+      void getStatistics().then(setStatistics);
+    }
+  }, [tab, loadHistoryIfNeeded, statistics]);
 
   if (isLoading) {
     return (
@@ -582,7 +586,12 @@ export default function ProfilePage() {
               </Card>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-4">
+              {saveMessage && (
+                <p className="text-sm text-slate-600 dark:text-slate-300" role="status">
+                  {saveMessage}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => void handleSave()}
@@ -653,7 +662,7 @@ export default function ProfilePage() {
                   Questões resolvidas
                 </div>
                 <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2">
-                  0
+                  {statistics?.last_30_total ?? 0}
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   Últimos 30 dias
@@ -665,7 +674,7 @@ export default function ProfilePage() {
                   Taxa de acerto
                 </div>
                 <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2">
-                  0%
+                  {statistics?.accuracy ?? 0}%
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   Média geral
@@ -677,7 +686,7 @@ export default function ProfilePage() {
                   Streak atual
                 </div>
                 <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2">
-                  0 dias
+                  {statistics?.streak ?? 0} dias
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   Consistência
@@ -686,21 +695,26 @@ export default function ProfilePage() {
 
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
                 <div className="text-xs text-slate-600 dark:text-slate-400">
-                  Tempo de estudo
+                  Acertos recentes
                 </div>
                 <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2">
-                  0h
+                  {statistics?.last_30_correct ?? 0}
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                  Últimos 7 dias
+                  Últimos 30 dias
                 </div>
               </div>
             </div>
 
             <Card title="Visão Geral">
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                Assim que você conectar os endpoints reais, dá para mostrar:
-                acertos por disciplina, evolução por dia, tempo por sessão, ranking e metas.
+              <div className="space-y-3">
+                {(statistics?.disciplines ?? []).map((item) => (
+                  <div key={item.discipline} className="flex items-center justify-between gap-4 text-sm">
+                    <span className="text-slate-700 dark:text-slate-200">{item.discipline}</span>
+                    <span className="text-slate-500">{item.correct}/{item.total} acertos · {item.accuracy}%</span>
+                  </div>
+                ))}
+                {statistics && statistics.disciplines.length === 0 && <p className="text-sm text-slate-500">Resolva questões para iniciar suas estatísticas.</p>}
               </div>
             </Card>
           </div>

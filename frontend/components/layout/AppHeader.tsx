@@ -19,7 +19,6 @@ import {
   StickyNote,
   LogOut,
   Medal,
-  FileText,
   ClipboardList,
 } from "lucide-react";
 

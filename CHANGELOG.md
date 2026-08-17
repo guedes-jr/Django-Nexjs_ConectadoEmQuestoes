@@ -4,6 +4,10 @@ Seguindo "Keep a Changelog" e SemVer. Mantido por desenvolvedores do projeto.
 
 ## [Unreleased]
 ### Added
+- Recuperação e alteração de senha com tokens de uso único e validação Django.
+- Importador JSON/CSV idempotente para provas e questões, com modo `--dry-run`.
+- Chat com contexto real, limites por plano e auditoria de tokens.
+- Capacidades dos planos aplicadas às APIs de questões e chat.
 - Estrutura inicial do monorepo: backend (Django + DRF + allauth + dj-rest-auth) e frontend (Next.js App Router).
 - Documentação: README, docs/Google_Oauth.md, CODE_OF_CONDUCT.md, CONTRIBUTING.md.
 - Configuração OAuth Google (documentada) e utilitários para criação do SocialApp.

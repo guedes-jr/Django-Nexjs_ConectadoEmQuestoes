@@ -11,6 +11,13 @@ export type Me = {
   last_name?: string | null;
   avatar?: string | null;
   social_avatar?: string | null;
+  phone: string;
+  state: string;
+  city: string;
+  profession: string;
+  target_role: string;
+  study_hours_per_day: number;
+  disciplines: string[];
 };
 
 type UseMeResult = {

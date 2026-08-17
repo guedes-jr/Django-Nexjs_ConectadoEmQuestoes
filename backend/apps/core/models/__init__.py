@@ -1,1 +1,3 @@
-from apps.sketches.models import Sketch
+from .profile import Profile
+
+__all__ = ["Profile"]

@@ -12,7 +12,7 @@ export default function RecuperarSenhaPage() {
   const sendReset = async () => {
     setLoading(true);
     try {
-      await http.post("/api/auth/password/reset/", { email });
+      await http.post("/api/password/reset/", { email });
       setSent(true);
     } finally {
       setLoading(false);

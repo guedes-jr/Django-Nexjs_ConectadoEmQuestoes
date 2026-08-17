@@ -22,11 +22,19 @@ Projeto fullstack com backend Django (DRF + dj-rest-auth + allauth) e frontend N
 
 ## Variáveis de ambiente (exemplos)
 - DJANGO_SECRET_KEY
-- DJANGO_DEBUG=1
+- DJANGO_ENV=development
 - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 - CORS_ALLOWED_ORIGINS=http://localhost:3000
 - CSRF_TRUSTED_ORIGINS=http://localhost:3000
-- NEXT_PUBLIC_API_URL=http://localhost:8000
+- FRONTEND_URL=http://localhost:3000
+- NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+- OPENAI_API_KEY (opcional; sem chave ou sem plano elegível, usa assistência local)
+- OPENAI_MODEL=gpt-5.4-mini
+- EMAIL_BACKEND (console no desenvolvimento; SMTP/API em produção)
+
+Em produção, use `DJANGO_ENV=production`. Nesse ambiente, segredo, hosts,
+CORS e origens CSRF são obrigatórios, e os cookies/redirects HTTPS são
+habilitados automaticamente.
 
 ## Setup — Backend
 ```bash
@@ -100,7 +108,7 @@ Erro comum: `redirect_uri_mismatch` — significa que o redirect_uri enviado nã
 import axios from "axios";
 
 const http = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -126,6 +134,28 @@ export { http };
 ## Contribuição / testes
 - Executar migrations antes de testar.
 - Para testes unitários (backend): python manage.py test
+
+## Importação de provas e questões
+
+O comando aceita `.json` ou `.csv`, valida alternativas/gabarito e atualiza registros repetidos sem duplicá-los:
+
+```bash
+cd backend
+python manage.py import_content caminho/conteudo.json --dry-run
+python manage.py import_content caminho/conteudo.json
+```
+
+Campos obrigatórios: `banca`, `year`, `discipline`, `statement`, `options` e
+`correct_answer` (índice iniciado em zero). Em CSV, `options` deve ser um array JSON.
+
+## Chat e permissões dos planos
+
+- Grátis: 20 respostas de questões e 5 mensagens locais por dia.
+- Padrão: questões ilimitadas, 50 mensagens por dia e OpenAI quando configurada.
+- Avançado: questões ilimitadas, 200 mensagens por dia, OpenAI e ferramentas avançadas.
+- O chat registra provedor, modelo e tokens, usa `store: false` e aceita uma prova e até cinco questões como contexto real.
+
+Planos pagos permanecem `pending_payment` até a integração de um gateway; nenhuma cobrança é simulada.
 
 Contato / observações
 - Documentação adicional: docs/Google_Oauth.md
@@ -193,4 +223,3 @@ flowchart LR
 Observações rápidas:
 - Frontend deve usar requests com credentials (axios withCredentials ou fetch credentials: "include").
 - Backend deve ter CORS_ALLOW_CREDENTIALS = True e redirect URIs exatos no Google Cloud Console.
-

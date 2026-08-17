@@ -18,6 +18,11 @@ urlpatterns = [
     # Sketches API
     path("api/", include("apps.sketches.urls")),
 
+    # Questions API
+    path("api/", include("apps.questions.urls")),
+    path("api/", include("apps.chat.urls")),
+    path("api/", include("apps.billing.urls")),
+
     # Profile
     path("api/profile/avatar/", upload_avatar),
 ]

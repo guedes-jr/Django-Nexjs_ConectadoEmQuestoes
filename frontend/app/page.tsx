@@ -43,32 +43,6 @@ function LockIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9A6.4 6.4 0 0 1 12 5.2c1.8 0 3 .8 3.7 1.5l2.5-2.4C16.7 2.9 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12Z"
-      />
-      <path
-        fill="#34A853"
-        d="M3.2 8.7l3.2 2.3A6.4 6.4 0 0 1 12 5.2c1.8 0 3 .8 3.7 1.5l2.5-2.4C16.7 2.9 14.6 2 12 2 8.2 2 4.9 4.1 3.2 8.7Z"
-        opacity=".001"
-      />
-      <path
-        fill="#4285F4"
-        d="M22 12.2c0-.7-.1-1.2-.2-1.7H12v3.9h5.5c-.3 1.6-1.7 3.6-5.5 3.6v4c3.9 0 7.2-1.4 9-4 1-1.5 1.9-3.4 1.9-5.8Z"
-        opacity=".001"
-      />
-      <path
-        fill="#FBBC05"
-        d="M12 22c2.6 0 4.8-.9 6.4-2.4l-3-2.5c-.8.5-1.9.9-3.4.9A6.4 6.4 0 0 1 6 13.6l-3.3 2.5C4.4 19.9 7.9 22 12 22Z"
-        opacity=".001"
-      />
-    </svg>
-  );
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
